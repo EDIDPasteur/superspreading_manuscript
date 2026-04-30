@@ -67,7 +67,7 @@ python run_simulations.py \
     -b /path/to/beast \
     -d /path/to/output_dir
 # No-superspreading control:
-python run_simulations_no_ss.py ...
+python run_simulations_no_ss.py [no ss files]
 ```
 
 `run_simulations.py` sweeps four (f, M) combinations — the superspreader
