@@ -50,7 +50,7 @@ Inputs consumed by `paper_figures.R`:
 | `Simulation_results_trees.csv` | Posterior summaries from BDMM-Prime fits to simulated trees |
 | `Simulation_results_seqs.csv`  | Posterior summaries from BDMM-Prime fits to simulated alignments |
 | `Simulation_results_no_ss.csv` | Posterior summaries from the no-superspreading control |
-| `BDMMPrime_neisseria_superspreading.log.gz` | BEAST log file for the hierarchical _Neisseria gonorrhoeae_ analysis |
+| `BDMMPrime_neisseria_superspreading.thinned2x.log.gz` | BEAST log file for the hierarchical _Neisseria gonorrhoeae_ analysis |
 | `tip_dates.txt`, `last_sample_date.txt` | Sampling dates used for skyline plots |
 
 ## Reproducing the analyses

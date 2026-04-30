@@ -280,7 +280,7 @@ ggarrange(exponential_prior,
 # FIGURE 3 ####
 # read the log file
 
-log <- readLog("data/BDMMPrime_neisseria_superspreading.log.gz", as.mcmc = F)
+log <- readLog("data/BDMMPrime_neisseria_superspreading.thinned2x.log.gz", as.mcmc = F)
 
 stats <- lapply(names(log), function(param_name) {
   x <- log[[param_name]]
