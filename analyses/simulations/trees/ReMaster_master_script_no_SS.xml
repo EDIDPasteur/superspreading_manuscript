@@ -1,0 +1,27 @@
+<beast version="2.0" 
+    namespace="beast.base.inference:beast.base.inference.parameter:remaster">
+  <run spec="Simulator" nSims="100">
+    <simulate id="tree" spec="SimulatedTree" maxRetries="100">
+      <trajectory id="trajectory" spec="StochasticTrajectory" endsWhen="samp>=500"> <!--Note that simulation ends when the collected samples is 100-->
+        <population id="NS" spec="RealParameter" value="1"/> <!--normal spreading initial population size-->
+        <samplePopulation id="samp" spec="RealParameter" value="0"/> <!--initial sampled population. Needs to start at 0. -->
+
+        <reaction id="lambda_ns_ns" spec="Reaction" rate="6"> NS -> 2NS </reaction> 
+        <reaction id="psi_ns" spec="Reaction" rate="0.4"> NS -> samp </reaction>
+        <reaction id="mu_ns" spec="Reaction" rate="3.6"> NS -> 0 </reaction>
+
+      </trajectory>
+    </simulate>
+
+    <logger fileName="$(filebase)_typed.trees" mode="tree">
+      <log spec="TypedTreeLogger" tree="@tree"/>
+    </logger>
+    <logger fileName="$(filebase)_untyped.trees" mode="tree">
+      <log spec="TypedTreeLogger" tree="@tree" removeSingletonNodes="true"/>
+    </logger>
+    <logger fileName="$(filebase)_trajectory.traj">
+      <log idref="trajectory"/>
+    </logger>
+  </run>
+</beast>
+

@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.base.evolution.alignment:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="BEAST.base v2.7.7:BDMM-Prime v2.4.0:SA v2.1.1" version="2.7">
+
+
+    <!-- Load alignments for each cluster -->
+     <!-- Random subset of clusters (one big cluster included)-->
+    <plate var="n" range="1003,1177,180,557,560,980">
+        <alignment spec='feast.fileio.AlignmentFromFasta' fileName="alignments/cluster_$(n).gubbins.snps.fasta" id="alignment$(n)Original"/>   
+    </plate>
+    
+    <data id="alignment1003" spec="FilteredAlignment" filter="-" data="@alignment1003Original" constantSiteWeights="472502 525870 539629 482847"/>
+    <data id="alignment1177" spec="FilteredAlignment" filter="-" data="@alignment1177Original" constantSiteWeights="492463 542202 556287 503676"/>
+    <data id="alignment180" spec="FilteredAlignment" filter="-" data="@alignment180Original" constantSiteWeights="491628 541899 555809 502945"/>
+    <data id="alignment557" spec="FilteredAlignment" filter="-" data="@alignment557Original" constantSiteWeights="473931 526954 540827 484439"/>
+    <data id="alignment560" spec="FilteredAlignment" filter="-" data="@alignment560Original" constantSiteWeights="475912 528591 542446 486263"/>
+    <data id="alignment980" spec="FilteredAlignment" filter="-" data="@alignment980Original" constantSiteWeights="492688 542435 556618 503869"/>
+
+
+    <map name="Uniform" >beast.base.inference.distribution.Uniform</map>
+    <map name="Exponential" >beast.base.inference.distribution.Exponential</map>
+    <map name="LogNormal" >beast.base.inference.distribution.LogNormalDistributionModel</map>
+    <map name="Normal" >beast.base.inference.distribution.Normal</map>
+    <map name="Beta" >beast.base.inference.distribution.Beta</map>
+    <map name="Gamma" >beast.base.inference.distribution.Gamma</map>
+    <map name="LaplaceDistribution" >beast.base.inference.distribution.LaplaceDistribution</map>
+    <map name="prior" >beast.base.inference.distribution.Prior</map>
+    <map name="InverseGamma" >beast.base.inference.distribution.InverseGamma</map>
+    <map name="OneOnX" >beast.base.inference.distribution.OneOnX</map>
+
+    <run id="mcmc" spec="MCMC" chainLength="1000000000000">
+        <state id="state" spec="State" storeEvery="10000">
+            
+            <!-- Generate the initial trees for each alignment-->
+            <plate var="n" range="1003,1177,180,557,560,980">    
+                <tree id="tree$(n)" spec='beast.base.evolution.tree.Tree' name="stateNode">
+                    <trait spec="feast.fileio.TraitSetFromTaxonSet"
+                        id="dates$(n)"
+                        delimiter="_"
+                        everythingAfterLast="true"
+                        traitname="date">
+                        <taxa id="TaxonSet$(n)" spec="TaxonSet" alignment="@alignment$(n)"/> 
+                    </trait>
+                <taxonset idref="TaxonSet$(n)"/> 
+                </tree>
+            </plate>
+
+            <!-- New parameters -->
+            <!-- Shared parameters -->
+            <parameter id="becomeUninfectiousRateEpi.t:ss_tree" spec="parameter.RealParameter" lower="0.0" name="stateNode">4</parameter>
+            <parameter id="samplingProportionEpi.t:ss_tree" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="1.0" dimension="2">0.1 0.0</parameter>
+            <parameter id="gammaShape.s:ss_tree" spec="parameter.RealParameter" lower="0.1" name="stateNode">1.0</parameter>
+            <parameter id="kappa.s:ss_tree" spec="parameter.RealParameter" lower="0.0" name="stateNode">2.0</parameter>
+            <parameter id ="ClockM" spec="parameter.RealParameter" name="stateNode">-11</parameter>
+            <parameter id ="ClockS" spec="parameter.RealParameter" name="stateNode" lower="0.0">1.25</parameter>
+            <parameter id="removalProbEpi.t:ss_tree" spec="parameter.RealParameter" estimate="false" lower="0.0" name="stateNode" upper="1.0">1.0</parameter>
+            <parameter id="migrationRateEpi.t:ss_tree" spec="parameter.RealParameter" estimate="false" lower="0.0" name="stateNode">0.0</parameter>
+
+            <!-- Independent parameters -->
+            <plate var="n" range="1003,1177,180,557,560,980">
+                <parameter id="originBDMMPrime$(n)" spec="parameter.RealParameter" name="stateNode">10.0</parameter>
+                <parameter id="clockRate$(n)" spec="parameter.RealParameter" lower="0.0" name="stateNode">0.000006</parameter>
+                <parameter id="Re$(n)" spec="parameter.RealParameter" name="stateNode" lower="0.0" dimension="2">1.0 1.0</parameter>
+                <parameter id="SSFrac$(n)" spec="parameter.RealParameter" name="stateNode" lower="0.0" dimension="2" upper="1.0">0.1 0.1</parameter>
+                <parameter id="ReMultiplier$(n)" spec="parameter.RealParameter" name="stateNode" lower="1.0" dimension="2">1.1 1.1</parameter>
+
+            </plate>
+            
+
+            <!-- Calculation of dates for changue time-->
+             <parameter id="SSchangingTime" spec="parameter.RealParameter" name="stateNode" lower="1.0" dimension="1">2020.23</parameter>
+             
+            
+
+        </state>
+        <plate var="n" range="1003,1177,180,557,560,980">
+            <init id="RandomTree$(n)" spec="RandomTree" estimate="false" initial="@tree$(n)" taxa="@alignment$(n)">
+            <populationModel id="ConstantPopulation0$(n)" spec="ConstantPopulation">
+                <parameter id="randomPopSize$(n)" spec="parameter.RealParameter" name="popSize">1.0</parameter>
+            </populationModel>
+            </init>
+        </plate>
+
+        <distribution id="posterior" spec="CompoundDistribution">
+            <distribution id="prior" spec="CompoundDistribution">
+                <!-- independent priors -->
+                 <plate var="n" range="1003,1177,180,557,560,980">
+                    <distribution id="BDMMPrime$(n)" spec="bdmmprime.distribution.BirthDeathMigrationDistribution" conditionOnSurvival="false" tree="@tree$(n)">
+                        <parameterization id="EpiBDMMPrimeParameterization$(n)" spec="bdmmprime.parameterization.EpiParameterization" processLength="@originBDMMPrime$(n)">
+                            <Re id="ReSPEpi$(n)" spec="bdmmprime.parameterization.SkylineVectorParameter" isScalar="false" processLength="@originBDMMPrime$(n)"  timesAreAges="true">
+                                <!-- The change time for the data is the age of the lockdown with respect to the cluster -->
+                                <changeTimes id="ReChangePoint$(n)" spec="feast.expressions.ExpCalculator" value="max(taxonYears$(n)) - SSchangingTime">
+                                        <arg id="taxonYears$(n)" spec="feast.function.TraitSetAsFunction">
+                                            <traitSet spec="feast.fileio.TraitSetFromTaxonSet"
+                                                delimiter="_"
+                                                everythingAfterLast="true" traitname="trait"> <!-- New trait bc the date trait is automatically converted to ages -->
+                                                <taxa idref="TaxonSet$(n)"/>
+                                            </traitSet>
+                                        </arg>
+                                        <arg idref="SSchangingTime"/>
+                                </changeTimes>
+                                <!-- New definition of parameters for Re-->
+                                <skylineValues id="ReEpi$(n)" spec="feast.function.Concatenate">
+                                    <!-- Values for epoch 1-->
+                                    <arg id="Re_NS_NS_1$(n)" spec="feast.expressions.ExpCalculator" value="ReNS_1$(n) * (1 - SSFrac$(n)[1])">
+                                            <arg id="ReNS_1$(n)" spec="feast.expressions.ExpCalculator" value="Re$(n)[1]/ (1 - SSFrac$(n)[1] + SSFrac$(n)[1] * ReMultiplier$(n)[1])">
+                                                <arg idref="Re$(n)"/>
+                                                <arg idref="ReMultiplier$(n)"/>
+                                                <arg idref="SSFrac$(n)"/>
+                                            </arg>
+                                            <arg idref="SSFrac$(n)"/>
+                                    </arg>
+                                    <arg id="Re_SS_SS_1$(n)" spec="feast.expressions.ExpCalculator" value="ReNS_1$(n) * ReMultiplier$(n)[1] * SSFrac$(n)[1]">
+                                            <arg idref="ReNS_1$(n)"/>
+                                            <arg idref="ReMultiplier$(n)"/>
+                                            <arg idref="SSFrac$(n)"/>
+                                    </arg>
+
+                                    <!-- Values for epoch 2-->
+                                    <arg id="Re_NS_NS_2$(n)" spec="feast.expressions.ExpCalculator" value="ReNS_2$(n) * (1 - SSFrac$(n)[0])">
+                                            <arg id="ReNS_2$(n)" spec="feast.expressions.ExpCalculator" value="Re$(n)[0]/ (1 - SSFrac$(n)[0] + SSFrac$(n)[0] * ReMultiplier$(n)[0])">
+                                                <arg idref="Re$(n)"/>
+                                                <arg idref="ReMultiplier$(n)"/>
+                                                <arg idref="SSFrac$(n)"/>
+                                            </arg>
+                                            <arg idref="SSFrac$(n)"/>
+                                    </arg>
+                                    <arg id="Re_SS_SS_2$(n)" spec="feast.expressions.ExpCalculator" value="ReNS_2$(n) * ReMultiplier$(n)[0] * SSFrac$(n)[0]">
+                                            <arg idref="ReNS_2$(n)"/>
+                                            <arg idref="ReMultiplier$(n)"/>
+                                            <arg idref="SSFrac$(n)"/>
+                                    </arg>
+                                </skylineValues>
+                                <typeSet id="typeSetBDMMPrime$(n)" spec="bdmmprime.parameterization.TypeSet" value="NS,SS">
+                                    <unknownTypeIdentifier>?</unknownTypeIdentifier>
+                                    <typeTraitSet id="typeTraitSet$(n)" spec="feast.fileio.TraitSetFromTaxonSet"
+                                        traitname="type" 
+                                        delimiter="_" 
+                                        takeGroup="1">
+                                        <taxa idref="TaxonSet$(n)"/>
+                                    </typeTraitSet>
+                                </typeSet>
+                            </Re>
+                            <becomeUninfectiousRate id="becomeUninfectiousRateSPEpi$(n)" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime$(n)" skylineValues="@becomeUninfectiousRateEpi.t:ss_tree" timesAreAges="true" typeSet="@typeSetBDMMPrime$(n)"/>
+                            <samplingProportion id="samplingProportionSPEpi$(n)" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime$(n)" skylineValues="@samplingProportionEpi.t:ss_tree" timesAreAges="true" typeSet="@typeSetBDMMPrime$(n)">
+                                <parameter id="samplingPoint$(n)" spec="feast.parameter.RealParameterFromFunction" name="changeTimes">
+                                    <function spec="feast.expressions.ExpCalculator" value="max(taxonTimes$(n))+0.1">
+                                        <arg id="taxonTimes$(n)" spec="feast.function.TraitSetAsFunction" traitSet="@dates$(n)"/>
+                                    </function>
+                                </parameter>
+                            </samplingProportion>
+                            <rhoSampling id="rhoSamplingProbSPEpi$(n)" spec="bdmmprime.parameterization.TimedParameter" processLength="@originBDMMPrime$(n)" timesAreAges="true" typeSet="@typeSetBDMMPrime$(n)"/>
+                            <removalProb id="removalProbSPEpi$(n)" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime$(n)" timesAreAges="true" typeSet="@typeSetBDMMPrime$(n)" skylineValues="@removalProbEpi.t:ss_tree"/>
+                            <migrationRate id="migrationRateSPEpi$(n)" spec="bdmmprime.parameterization.SkylineMatrixParameter" processLength="@originBDMMPrime$(n)" timesAreAges="true" typeSet="@typeSetBDMMPrime$(n)" skylineValues="@migrationRateEpi.t:ss_tree"/>
+                            <ReAmongDemes id="ReAmongDemesSPEpi$(n)" spec="bdmmprime.parameterization.SkylineMatrixParameter" isScalar="false" processLength="@originBDMMPrime$(n)" timesAreAges="true" typeSet="@typeSetBDMMPrime$(n)" changeTimes="@ReChangePoint$(n)">
+                                <!-- New definition of parameters for Re among demes-->
+                                <skylineValues id="ReAmongDemesEpi$(n)" spec="feast.function.Concatenate">
+                                    <!-- Values for epoch 1-->
+                                    <arg id="Re_NS_SS_1$(n)" spec="feast.expressions.ExpCalculator" value="ReNS_1$(n) * SSFrac$(n)[1]">
+                                            <arg idref="ReNS_1$(n)"/>
+                                            <arg idref="SSFrac$(n)"/>
+                                    </arg>
+                                    <arg id="Re_SS_NS_1$(n)" spec="feast.expressions.ExpCalculator" value="ReNS_1$(n) * ReMultiplier$(n)[1] * (1 - SSFrac$(n)[1])">
+                                            <arg idref="ReNS_1$(n)"/>
+                                            <arg idref="ReMultiplier$(n)"/>
+                                            <arg idref="SSFrac$(n)"/>
+                                    </arg>
+
+                                    <!-- Values for epoch 2-->
+                                    <arg id="Re_NS_SS_2$(n)" spec="feast.expressions.ExpCalculator" value="ReNS_2$(n) * SSFrac$(n)[0]">
+                                            <arg idref="ReNS_2$(n)"/>
+                                            <arg idref="SSFrac$(n)"/>
+                                    </arg>
+                                    <arg id="Re_SS_NS_2$(n)" spec="feast.expressions.ExpCalculator" value="ReNS_2$(n) * ReMultiplier$(n)[0] * (1 - SSFrac$(n)[0])">
+                                            <arg idref="ReNS_2$(n)"/>
+                                            <arg idref="ReMultiplier$(n)"/>
+                                            <arg idref="SSFrac$(n)"/>
+                                    </arg>
+                                
+                                </skylineValues>
+                            </ReAmongDemes>
+                            <typeSet idref="typeSetBDMMPrime$(n)"/>
+                            
+                        </parameterization>
+                        <parameter id="startTypePriorProbs$(n)" spec="parameter.RealParameter" dimension="2" estimate="false" lower="0.0" name="startTypePriorProbs" upper="1.0">0.5 0.5</parameter>
+                        <typeTraitSet idref="typeTraitSet$(n)"/>
+                    </distribution>
+                 </plate>
+                
+                <!-- Priors for new parameters -->
+                <!--Priors for shared parameters-->
+                <prior id="reproductiveNumberChangeDate_prior" name="distribution" x="@SSchangingTime">
+                    <Uniform id="uniform_ReChange_date" name="distr" lower="2020.216" upper="2020.243"/>
+                </prior>
+                 <prior id="Clock_prior_m_prior" name="distribution" x="@ClockM">
+                    <Normal id="NormalDistributionModel.0" name="distr">
+                            <parameter id="RealParameter.5" spec="parameter.RealParameter" estimate="false" name="mean">-12.0</parameter>
+                            <parameter id="RealParameter.6" spec="parameter.RealParameter" estimate="false" name="sigma">0.75</parameter>
+                    </Normal>
+                </prior>
+                <distribution id="becomeUninfectiousRateEpiPrior.t:ss_tree" spec="bdmmprime.util.priors.ZeroExcludingPrior" x="@becomeUninfectiousRateEpi.t:ss_tree">
+                    <OneOnX id="OneOnX.20" name="distr"/>
+                </distribution>
+
+                <distribution id="samplingProportionEpiPrior.t:ss_tree" spec="bdmmprime.util.priors.ZeroExcludingPrior" x="@samplingProportionEpi.t:ss_tree">
+                    <Uniform id="Uniform.17" name="distr"/>
+                </distribution>
+                <prior id="clock_prior_s_prior" name="distribution" x="@ClockS">
+                    <LogNormal id="LogNormalDistributionModel.1$(n)" name="distr">
+                            <parameter id="RealParameter.7$(n)" spec="parameter.RealParameter" estimate="false" name="M">0.0</parameter>
+                            <parameter id="RealParameter.8$(n)" spec="parameter.RealParameter" estimate="false" lower="0.0" name="S" upper="5.0">1.0</parameter>
+                    </LogNormal>
+                </prior>
+                <!-- No prior for the mean of the lognormal prior of the clock rate-->
+
+                        <!-- Priors for substitution model parameters -->
+                <prior id="GammaShapePrior.s:ss_tree" name="distribution" x="@gammaShape.s:ss_tree">
+                    <Exponential id="Exponential.0" name="distr">
+                        <parameter id="RealParameter.130" spec="parameter.RealParameter" estimate="false" name="mean">1.0</parameter>
+                    </Exponential>
+                </prior>
+                <prior id="KappaPrior.s:ss_tree" name="distribution" x="@kappa.s:ss_tree">
+                    <LogNormal id="LogNormalDistributionModel.0" name="distr">
+                        <parameter id="RealParameter.14" spec="parameter.RealParameter" estimate="false" name="M">1.0</parameter>
+                        <parameter id="RealParameter.15" spec="parameter.RealParameter" estimate="false" name="S">1.25</parameter>
+                    </LogNormal>
+                </prior>
+
+                <!-- Priors for independent parameters-->
+                <plate var="n" range="1003,1177,180,557,560,980">
+                    <distribution id="RePrior$(n)" spec="bdmmprime.util.priors.ZeroExcludingPrior" x="@Re$(n)">
+                        <LogNormal id="LogNormalDistributionModel.1$(n)" name="distr">
+                            <parameter id="RealParameter.7$(n)" spec="parameter.RealParameter" estimate="false" name="M">0.0</parameter>
+                            <parameter id="RealParameter.8$(n)" spec="parameter.RealParameter" estimate="false" lower="0.0" name="S" upper="5.0">1.0</parameter>
+                        </LogNormal>
+                    </distribution>
+                    <distribution id="ReMultipicativePrior$(n)" spec="bdmmprime.util.priors.ZeroExcludingPrior" x="@ReMultiplier$(n)">
+                        <Exponential id="Exponential.9$(n)" name="distr" offset="1.0">
+                            <parameter id="RealParameter.10$(n)" spec="parameter.RealParameter" estimate="false" name="mean">5.0</parameter>
+                        </Exponential>
+                    </distribution>
+                    <prior id="SSFracPrior$(n)" name="distribution" x="@SSFrac$(n)">
+                        <Beta id="Beta.0$(n)" name="distr">
+                            <parameter id="RealParameter.11$(n)" spec="parameter.RealParameter" estimate="false" name="alpha">1.0</parameter>
+                            <parameter id="RealParameter.12$(n)" spec="parameter.RealParameter" estimate="false" name="beta">1.0</parameter>
+                        </Beta>
+                    </prior>
+
+                     <prior id="originBDMMPrimePrior$(n)" name="distribution" x="@originBDMMPrime$(n)">
+                        <OneOnX id="OneOnX.1$(n)" name="distr"/>
+                    </prior>
+
+                    <prior id="ClockPrior$(n)" name="distribution" x="@clockRate$(n)">
+                        <LogNormal id="LogNormalDistributionModel.2$(n)" name="distr" M="@ClockM" S="@ClockS"/>
+                    </prior>
+
+                </plate>
+                
+                
+
+            </distribution>
+
+            <distribution id="likelihood" spec="CompoundDistribution" useThreads="true">
+                <!-- Tree likelihoods-->
+                <plate var="n" range="1003,1177,180,557,560,980">
+                    <distribution id="treeLikelihood$(n)" spec="ThreadedTreeLikelihood" data="@alignment$(n)" tree="@tree$(n)">
+                        <siteModel id="SiteModel$(n)" spec="SiteModel"  shape="@gammaShape.s:ss_tree">
+                            <parameter id="mutationRate$(n)" spec="parameter.RealParameter" estimate="false" lower="0.0" name="mutationRate">1.0</parameter>
+                            <substModel id="hky$(n)" spec="HKY" kappa="@kappa.s:ss_tree">
+                                <frequencies id="empiricalFreqs$(n)" spec="Frequencies" data="@alignment$(n)"/>
+                            </substModel>
+                        </siteModel>
+                        <branchRateModel id="StrictClock$(n)" spec="beast.base.evolution.branchratemodel.StrictClockModel" clock.rate="@clockRate$(n)"/>
+
+                    </distribution>
+                </plate>
+                
+            </distribution>
+        </distribution>
+       
+       <!-- Operators -->
+        <!-- specific operators-->
+         <plate var="n" range="1003,1177,180,557,560,980">
+            <!-- operators for the tree-->
+            <operator id="BDMMPrimeLeafToSA$(n)" spec="sa.evolution.operators.LeafToSampledAncestorJump" tree="@tree$(n)" weight="10.0"/>
+            <operator id="BDMMPrimeSAWilsonBalding$(n)" spec="sa.evolution.operators.SAWilsonBalding" tree="@tree$(n)" weight="10.0"/>
+            <operator id="BDMMPrimeSAWide$(n)" spec="sa.evolution.operators.SAExchange" isNarrow="false" tree="@tree$(n)" weight="20.0"/>
+            <operator id="BDMMPrimeSANarrow$(n)" spec="sa.evolution.operators.SAExchange" tree="@tree$(n)" weight="20.0"/>
+            <operator id="BDMMPrimeSAUniformOperator$(n)" spec="sa.evolution.operators.SAUniform" tree="@tree$(n)" weight="20.0"/>
+            <operator id="BDMMPrimeSATreeRootScaler$(n)" spec="sa.evolution.operators.SAScaleOperator" rootOnly="true" scaleFactor="0.95" tree="@tree$(n)" weight="1.0"/>
+            <operator id="BDMMPrimeSATreeScaler$(n)" spec="sa.evolution.operators.SAScaleOperator" scaleFactor="0.95" tree="@tree$(n)" weight="3.0"/>
+
+            <operator id="KappaScaler$(n)" spec="AdaptableOperatorSampler" weight="0.05">
+                    <parameter idref="kappa.s:ss_tree"/>
+                    <operator id="AVMNOperator$(n)" spec="kernel.AdaptableVarianceMultivariateNormalOperator" allowNonsense="true" beta="0.05" burnin="400" initial="800" weight="0.1">
+                        <transformations id="AVMNSumTransform$(n)" spec="operator.kernel.Transform$LogConstrainedSumTransform"/>
+                        <transformations id="AVMNLogTransform$(n)" spec="operator.kernel.Transform$LogTransform">
+                            <f idref="kappa.s:ss_tree"/>
+                            <f idref="gammaShape.s:ss_tree"/>
+                            <f idref="clockRate$(n)"/>
+                        </transformations>
+                        <transformations id="AVMNNoTransform$(n)" spec="operator.kernel.Transform$NoTransform">
+                            <f idref="tree$(n)"/>
+                        </transformations>
+                    </operator>
+                    <operator id="KappaScalerX$(n)" spec="kernel.BactrianScaleOperator" parameter="@kappa.s:ss_tree" scaleFactor="0.1" upper="10.0" weight="0.1"/>
+                </operator>
+                <operator id="gammaShapeScaler$(n)" spec="AdaptableOperatorSampler" weight="0.05">
+                    <parameter idref="gammaShape.s:ss_tree"/>
+                    <operator idref="AVMNOperator$(n)"/>
+                    <operator id="gammaShapeScalerX$(n)" spec="kernel.BactrianScaleOperator" parameter="@gammaShape.s:ss_tree" scaleFactor="0.5" upper="10.0" weight="0.1"/>
+                </operator>
+            <operator id="originBDMMPrimeScaler$(n)" spec="ScaleOperator" parameter="@originBDMMPrime$(n)" weight="3.0"/>
+            
+            <!-- Operators for the clockrate -->
+            <operator id="StrictClockRateScaler$(n)" spec="AdaptableOperatorSampler" weight="1.5">
+                <parameter idref="clockRate$(n)"/>
+                <operator idref="AVMNOperator$(n)"/>
+                <operator id="StrictClockRateScalerX$(n)" spec="kernel.BactrianScaleOperator" parameter="@clockRate$(n)" upper="10.0" weight="3.0"/>
+            </operator>
+            <operator id="strictClockUpDownOperator$(n)" spec="AdaptableOperatorSampler" weight="1.5">
+                <parameter idref="clockRate$(n)"/>
+                <tree idref="tree$(n)"/>
+                <operator idref="AVMNOperator$(n)"/>
+                <operator id="strictClockUpDownOperatorX$(n)" spec="operator.kernel.BactrianUpDownOperator" scaleFactor="0.75" weight="3.0">
+                    <up idref="clockRate$(n)"/>
+                    <down idref="tree$(n)"/>
+                </operator>
+            </operator>
+
+            <!-- Scaling operators for the new parameters -->
+            <operator id="ReOperator$(n)" spec="ScaleOperator" parameter="@Re$(n)" weight="3.0"/>
+            <operator id="SSFracOperator$(n)" spec="ScaleOperator" parameter="@SSFrac$(n)" weight="3.0"/>
+            <operator id="ReMultiplierScaler$(n)" spec="ScaleOperator" parameter="@ReMultiplier$(n)" weight="3.0"/>
+         </plate>
+        
+        <!--Operators for shared parameters -->
+        <operator id="reproductiveNumberChangeDate_operator" spec="ScaleOperator" parameter="@SSchangingTime" weight="10" scaleFactor="0.999"/>
+        <operator id="samplingProportionEpiScaler.t:ss_tree" spec="ScaleOperator" parameter="@samplingProportionEpi.t:ss_tree" weight="3.0"/>
+        <operator id="ClockMoperator" spec="ScaleOperator" parameter="@ClockM" weight="3.0"/>
+        <operator id="ClockSoperator" spec="ScaleOperator" parameter="@ClockS" weight="3.0"/>
+    
+        <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="10000" model="@posterior" sanitiseHeaders="true" sort="smart">
+            <log idref="posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+            <log idref="kappa.s:ss_tree"/>
+            <log idref="gammaShape.s:ss_tree"/>
+             <plate var="n" range="1003,1177,180,557,560,980">
+                <log idref="clockRate$(n)"/>   
+                <log idref="originBDMMPrime$(n)"/>    
+                <log idref="ReMultiplier$(n)"/>
+                <log idref="SSFrac$(n)"/>
+                <log idref="Re$(n)"/>
+             </plate>
+             <log idref="samplingProportionEpi.t:ss_tree"/>
+            <log idref="SSchangingTime"/>
+            <log idref="ClockM" />
+            <log idref="ClockS" />
+
+        </logger>
+        <logger id="screenlog" spec="Logger" logEvery="1000">
+            <log idref="posterior"/>
+            <log idref="prior"/>
+        </logger>
+        <plate var="n" range="1003,1177,180,557,560,980">
+            <logger id="treelog$(n)" spec="Logger" fileName="$(filebase)-cluster_$(n).trees" logEvery="10000" mode="tree">
+                <log id="TreeWithMetaDataLogger$(n)" spec="beast.base.evolution.TreeWithMetaDataLogger" tree="@tree$(n)"/>
+            </logger>
+             <logger id="typedTreeLogger$(n)" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="$(filebase)-cluster_$(n).typed.trees" logEvery="1000" mode="tree">
+                <log id="typeMappedTree$(n)" spec="bdmmprime.mapping.TypeMappedTree" 
+                    bdmmDistrib="@BDMMPrime$(n)" mapOnInit="false" remapOnLog="true" 
+                    startTypePriorProbs="@startTypePriorProbs$(n)" typeLabel="type" 
+                    typeTraitSet="@typeTraitSet$(n)" untypedTree="@tree$(n)"/>
+            </logger>
+            <logger id="nodeTypedTreeLogger$(n)" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="$(filebase)-cluster_$(n).typed.node.trees" logEvery="10000" mode="tree">
+                <log id="nodeTypedTree$(n)" spec="bdmmprime.mapping.TypedNodeTreeLogger" typedTree="@typeMappedTree$(n)"/>
+            </logger>
+            <logger id="trajLogger$(n)" spec="bdmmprime.util.OptionalLogger" fileName="$(filebase)-cluster_$(n).traj" enableLogger="true" logEvery="10000">
+                <log id="typedTraj$(n)" spec="bdmmprime.trajectories.SampledTrajectory" bdmmDistrib="@BDMMPrime$(n)" startTypePriorProbs="@startTypePriorProbs$(n)" typeMappedTree="@typeMappedTree$(n)" useTauLeaping="true"/>
+            </logger>
+        </plate>
+        
+        <operatorschedule id="OperatorSchedule" spec="OperatorSchedule"/>
+    </run>
+
+</beast>

@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><beast beautitemplate='Standard' beautistatus='' namespace="beast.core:beast.evolution.alignment:beast.evolution.tree.coalescent:beast.core.util:beast.evolution.nuc:beast.evolution.operators:beast.evolution.sitemodel:beast.evolution.substitutionmodel:beast.base.evolution.alignment:beast.pkgmgmt:beast.base.core:beast.base.inference:beast.base.evolution.tree.coalescent:beast.pkgmgmt:beast.base.core:beast.base.inference.util:beast.evolution.nuc:beast.base.evolution.operator:beast.base.inference.operator:beast.base.evolution.sitemodel:beast.base.evolution.substitutionmodel:beast.base.evolution.likelihood" required="BEAST.base v2.7.7:BDMM-Prime v2.4.0:SA v2.1.1" version="2.7">
+
+    <data
+id="ss_tree"
+spec="Alignment"
+name="alignment">
+       [ALIGNMENT]
+    </data>
+
+
+    <map name="Uniform" >beast.base.inference.distribution.Uniform</map>
+
+    <map name="Exponential" >beast.base.inference.distribution.Exponential</map>
+
+    <map name="LogNormal" >beast.base.inference.distribution.LogNormalDistributionModel</map>
+
+    <map name="Normal" >beast.base.inference.distribution.Normal</map>
+
+    <map name="Beta" >beast.base.inference.distribution.Beta</map>
+
+    <map name="Gamma" >beast.base.inference.distribution.Gamma</map>
+
+    <map name="LaplaceDistribution" >beast.base.inference.distribution.LaplaceDistribution</map>
+
+    <map name="prior" >beast.base.inference.distribution.Prior</map>
+
+    <map name="InverseGamma" >beast.base.inference.distribution.InverseGamma</map>
+
+    <map name="OneOnX" >beast.base.inference.distribution.OneOnX</map>
+
+    <run id="mcmc" spec="MCMC" chainLength="10000000">
+        <state id="state" spec="State" storeEvery="5000">
+            <tree id="Tree.t:ss_tree" spec="beast.base.evolution.tree.Tree" name="stateNode">
+                <trait id="dateTrait.t:ss_tree" spec="beast.base.evolution.tree.TraitSet" traitname="date" value="[DATES]">
+                    <taxa id="TaxonSet.ss_tree" spec="TaxonSet">
+                        <alignment idref="ss_tree"/>
+                    </taxa>
+                </trait>
+                <taxonset idref="TaxonSet.ss_tree"/>
+                
+            </tree>
+            
+            <!-- New parameters -->
+            <parameter id="gammaShape.s:ss_tree" spec="parameter.RealParameter" lower="0.1" name="stateNode">1.0</parameter>
+            <parameter id="proportionInvariant.s:ss_tree" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="1.0">0.9991</parameter>
+            <parameter id="clockRate.c:ss_tree" spec="parameter.RealParameter" estimate="false" lower="0.0" name="stateNode">[CLOCKRATE]</parameter>
+            <parameter id="kappa.s:ss_tree" spec="parameter.RealParameter" lower="0.0" name="stateNode">2.0</parameter>
+            <parameter id="Re" spec="parameter.RealParameter" name="stateNode" lower="0.0">1.0</parameter>
+            <parameter id="SSFrac" spec="parameter.RealParameter" name="stateNode" lower="0.0" upper="1.0">0.1</parameter>
+            <parameter id="ReMultiplier" spec="parameter.RealParameter" name="stateNode" lower="1.0">1.1</parameter>
+
+            <parameter id="becomeUninfectiousRateEpi.t:ss_tree" spec="parameter.RealParameter" lower="0.0" name="stateNode">4</parameter>
+            <parameter id="samplingProportionEpi.t:ss_tree" spec="parameter.RealParameter" lower="0.0" name="stateNode" upper="1.0">0.1</parameter>
+            <parameter id="originBDMMPrime.t:ss_tree" spec="parameter.RealParameter" name="stateNode">10.0</parameter>
+        </state>
+         <init id="RandomTree.t:ss_tree" spec="beast.base.evolution.tree.TreeParser" initial="@Tree.t:ss_tree" taxa="@ss_tree">
+            <newick>
+            [TREE]
+            </newick>
+        </init>
+
+
+        <distribution id="posterior" spec="CompoundDistribution">
+            <distribution id="prior" spec="CompoundDistribution">
+                <distribution id="BDMMPrime.t:ss_tree" spec="bdmmprime.distribution.BirthDeathMigrationDistribution" conditionOnSurvival="false" tree="@Tree.t:ss_tree">
+                    <parameterization id="EpiBDMMPrimeParameterization.t:ss_tree" spec="bdmmprime.parameterization.EpiParameterization" processLength="@originBDMMPrime.t:ss_tree">
+                        <Re id="ReSPEpi.t:ss_tree" spec="bdmmprime.parameterization.SkylineVectorParameter" isScalar="false" processLength="@originBDMMPrime.t:ss_tree"  timesAreAges="true">
+                            <!-- New definition of parameters for Re-->
+                            <skylineValues id="ReEpi.t:ss_tree" spec="feast.function.Concatenate">
+                                <arg id="Re_NS_NS" spec="feast.expressions.ExpCalculator" value="ReNS * (1 - SSFrac)">
+                                        <arg id="ReNS" spec="feast.expressions.ExpCalculator" value="Re/ (1 - SSFrac + SSFrac * ReMultiplier)">
+                                            <arg idref="Re"/>
+                                            <arg idref="ReMultiplier"/>
+                                            <arg idref="SSFrac"/>
+                                        </arg>
+                                        <arg idref="SSFrac"/>
+                                </arg>
+                                <arg id="Re_SS_SS" spec="feast.expressions.ExpCalculator" value="ReNS * ReMultiplier * SSFrac">
+                                        <arg idref="ReNS"/>
+                                        <arg idref="ReMultiplier"/>
+                                        <arg idref="SSFrac"/>
+                                </arg>
+                            </skylineValues>
+                            <typeSet id="typeSetBDMMPrime.t:ss_tree" spec="bdmmprime.parameterization.TypeSet" value="NS,SS">
+                                <unknownTypeIdentifier>?</unknownTypeIdentifier>
+                                <typeTraitSet id="typeTraitSet.t:ss_tree" spec="bdmmprime.util.InitializedTraitSet" traitname="type" 
+                                        value= "[PHENOTYPES]">
+                                    <taxa id="TaxonSet.1" spec="TaxonSet" alignment="@ss_tree"/>
+                                </typeTraitSet>
+                            </typeSet>
+                        </Re>
+                        <becomeUninfectiousRate id="becomeUninfectiousRateSPEpi.t:ss_tree" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime.t:ss_tree" skylineValues="@becomeUninfectiousRateEpi.t:ss_tree" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:ss_tree"/>
+                        <samplingProportion id="samplingProportionSPEpi.t:ss_tree" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime.t:ss_tree" skylineValues="@samplingProportionEpi.t:ss_tree" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:ss_tree"/>
+                        <rhoSampling id="rhoSamplingProbSPEpi.t:ss_tree" spec="bdmmprime.parameterization.TimedParameter" processLength="@originBDMMPrime.t:ss_tree" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:ss_tree"/>
+                        <removalProb id="removalProbSPEpi.t:ss_tree" spec="bdmmprime.parameterization.SkylineVectorParameter" processLength="@originBDMMPrime.t:ss_tree" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:ss_tree">
+                            <parameter id="removalProbEpi.t:ss_tree" spec="parameter.RealParameter" estimate="false" lower="0.0" name="skylineValues" upper="1.0">1.0</parameter>
+                        </removalProb>
+                        <migrationRate id="migrationRateSPEpi.t:ss_tree" spec="bdmmprime.parameterization.SkylineMatrixParameter" processLength="@originBDMMPrime.t:ss_tree" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:ss_tree">
+                            <parameter id="migrationRateEpi.t:ss_tree" spec="parameter.RealParameter" estimate="false" lower="0.0" name="skylineValues">0.0</parameter>
+                        </migrationRate>
+                        <ReAmongDemes id="ReAmongDemesSPEpi.t:ss_tree" spec="bdmmprime.parameterization.SkylineMatrixParameter" isScalar="false" processLength="@originBDMMPrime.t:ss_tree" timesAreAges="true" typeSet="@typeSetBDMMPrime.t:ss_tree">
+                            <!-- New definition of parameters for Re among demes-->
+                            <skylineValues id="ReAmongDemesEpi.t:ss_tree" spec="feast.function.Concatenate">
+                                <arg id="Re_NS_SS" spec="feast.expressions.ExpCalculator" value="ReNS * SSFrac">
+                                        <arg idref="ReNS"/>
+                                        <arg idref="SSFrac"/>
+                                </arg>
+                                <arg id="Re_SS_NS" spec="feast.expressions.ExpCalculator" value="ReNS * ReMultiplier * (1 - SSFrac)">
+                                        <arg idref="ReNS"/>
+                                        <arg idref="ReMultiplier"/>
+                                        <arg idref="SSFrac"/>
+                                </arg>
+                            </skylineValues>
+                        </ReAmongDemes>
+                        <typeSet idref="typeSetBDMMPrime.t:ss_tree"/>
+                            
+                    </parameterization>
+                    <parameter id="startTypePriorProbs.t:ss_tree" spec="parameter.RealParameter" dimension="2" estimate="false" lower="0.0" name="startTypePriorProbs" upper="1.0">0.5 0.5</parameter>
+                    <typeTraitSet idref="typeTraitSet.t:ss_tree"/>
+                </distribution>
+                <!-- Priors for new parameters -->
+                <distribution id="RePrior" spec="bdmmprime.util.priors.ZeroExcludingPrior" x="@Re">
+                    <LogNormal id="LogNormalDistributionModel.1" name="distr">
+                        <parameter id="RealParameter.7" spec="parameter.RealParameter" estimate="false" name="M">0.0</parameter>
+                        <parameter id="RealParameter.8" spec="parameter.RealParameter" estimate="false" lower="0.0" name="S" upper="5.0">1.0</parameter>
+                    </LogNormal>
+                </distribution>
+                <distribution id="ReMultipicativePrior" spec="bdmmprime.util.priors.ZeroExcludingPrior" x="@ReMultiplier">
+                     <Exponential id="Exponential.9" name="distr" offset="1.0">
+                        <parameter id="RealParameter.10" spec="parameter.RealParameter" estimate="false" name="mean">5.0</parameter>
+                    </Exponential>
+                </distribution>
+                <prior id="SSFracPrior" name="distribution" x="@SSFrac">
+                    <Beta id="Beta.0" name="distr">
+                        <parameter id="RealParameter.11" spec="parameter.RealParameter" estimate="false" name="alpha">1.0</parameter>
+                        <parameter id="RealParameter.12" spec="parameter.RealParameter" estimate="false" name="beta">1.0</parameter>
+                    </Beta>
+                </prior>
+
+                <!-- Priors for substitution model parameters -->
+                <prior id="GammaShapePrior.s:ss_tree" name="distribution" x="@gammaShape.s:ss_tree">
+                    <Exponential id="Exponential.0" name="distr">
+                        <parameter id="RealParameter.13" spec="parameter.RealParameter" estimate="false" name="mean">1.0</parameter>
+                    </Exponential>
+                </prior>
+                <prior id="KappaPrior.s:ss_tree" name="distribution" x="@kappa.s:ss_tree">
+                    <LogNormal id="LogNormalDistributionModel.0" name="distr">
+                        <parameter id="RealParameter.14" spec="parameter.RealParameter" estimate="false" name="M">1.0</parameter>
+                        <parameter id="RealParameter.15" spec="parameter.RealParameter" estimate="false" name="S">1.25</parameter>
+                    </LogNormal>
+                </prior>
+
+                <!-- Other priors -->
+                <distribution id="becomeUninfectiousRateEpiPrior.t:ss_tree" spec="bdmmprime.util.priors.ZeroExcludingPrior" x="@becomeUninfectiousRateEpi.t:ss_tree">
+                    <OneOnX id="OneOnX.20" name="distr"/>
+                </distribution>
+               
+                <prior id="originBDMMPrimePrior.t:ss_tree" name="distribution" x="@originBDMMPrime.t:ss_tree">
+                    <OneOnX id="OneOnX.1" name="distr"/>
+                </prior>
+                <prior id="PropInvariantPrior.s:ss_tree" name="distribution" x="@proportionInvariant.s:ss_tree">
+                    <Uniform id="Uniform.2" name="distr"/>
+                </prior>
+                <distribution id="samplingProportionEpiPrior.t:ss_tree" spec="bdmmprime.util.priors.ZeroExcludingPrior" x="@samplingProportionEpi.t:ss_tree">
+                    <Uniform id="Uniform.17" name="distr"/>
+                </distribution>
+
+            </distribution>
+
+            <distribution id="likelihood" spec="CompoundDistribution" useThreads="true">
+                <distribution id="treeLikelihood.ss_tree" spec="ThreadedTreeLikelihood" data="@ss_tree" tree="@Tree.t:ss_tree">
+                    <siteModel id="SiteModel.s:ss_tree" spec="SiteModel"  shape="@gammaShape.s:ss_tree" proportionInvariant="@proportionInvariant.s:ss_tree">
+                        <parameter id="mutationRate.s:ss_tree" spec="parameter.RealParameter" estimate="false" lower="0.0" name="mutationRate">1.0</parameter>
+                        <substModel id="hky.s:ss_tree" spec="HKY" kappa="@kappa.s:ss_tree">
+                            <frequencies id="empiricalFreqs.s:ss_tree" spec="Frequencies" data="@ss_tree"/>
+                        </substModel>
+                    </siteModel>
+                    <branchRateModel id="StrictClock.c:ss_tree" spec="beast.base.evolution.branchratemodel.StrictClockModel" clock.rate="@clockRate.c:ss_tree"/>
+
+                </distribution>
+            </distribution>
+        </distribution>
+       
+       <!-- Operators -->
+        <operator id="KappaScaler.s:ss_tree" spec="AdaptableOperatorSampler" weight="0.05">
+            <parameter idref="kappa.s:ss_tree"/>
+            <operator id="AVMNOperator.ss_tree" spec="kernel.AdaptableVarianceMultivariateNormalOperator" allowNonsense="true" beta="0.05" burnin="400" initial="800" weight="0.1">
+                <transformations id="AVMNSumTransform.ss_tree" spec="operator.kernel.Transform$LogConstrainedSumTransform"/>
+                <transformations id="AVMNLogTransform.ss_tree" spec="operator.kernel.Transform$LogTransform">
+                    <f idref="kappa.s:ss_tree"/>
+                    <f idref="gammaShape.s:ss_tree"/>
+                    <f idref="proportionInvariant.s:ss_tree"/>
+                </transformations>
+                <transformations id="AVMNNoTransform.ss_tree" spec="operator.kernel.Transform$NoTransform">
+                    <f idref="Tree.t:ss_tree"/>
+                </transformations>
+            </operator>
+            <operator id="KappaScalerX.s:ss_tree" spec="kernel.BactrianScaleOperator" parameter="@kappa.s:ss_tree" scaleFactor="0.1" upper="10.0" weight="0.1"/>
+        </operator>
+        <operator id="proportionInvariantScaler.s:ss_tree" spec="AdaptableOperatorSampler" weight="0.05">
+            <parameter idref="proportionInvariant.s:ss_tree"/>
+            <operator idref="AVMNOperator.ss_tree"/>
+            <operator id="proportionInvariantScalerX.s:ss_tree" spec="kernel.BactrianScaleOperator" parameter="@proportionInvariant.s:ss_tree" scaleFactor="0.5" upper="10.0" weight="0.1"/>
+        </operator>
+        <operator id="gammaShapeScaler.s:ss_tree" spec="AdaptableOperatorSampler" weight="0.05">
+            <parameter idref="gammaShape.s:ss_tree"/>
+            <operator idref="AVMNOperator.ss_tree"/>
+            <operator id="gammaShapeScalerX.s:ss_tree" spec="kernel.BactrianScaleOperator" parameter="@gammaShape.s:ss_tree" scaleFactor="0.5" upper="10.0" weight="0.1"/>
+        </operator>
+        <operator id="originBDMMPrimeScaler.t:ss_tree" spec="ScaleOperator" parameter="@originBDMMPrime.t:ss_tree" weight="3.0"/>
+
+        <!-- operators for the tree-->
+        <operator id="BDMMPrimeLeafToSA.t:ss_tree" spec="sa.evolution.operators.LeafToSampledAncestorJump" tree="@Tree.t:ss_tree" weight="10.0"/>
+        <operator id="BDMMPrimeSAWilsonBalding.t:ss_tree" spec="sa.evolution.operators.SAWilsonBalding" tree="@Tree.t:ss_tree" weight="10.0"/>
+        <operator id="BDMMPrimeSAWide.t:ss_tree" spec="sa.evolution.operators.SAExchange" isNarrow="false" tree="@Tree.t:ss_tree" weight="20.0"/>
+        <operator id="BDMMPrimeSANarrow.t:ss_tree" spec="sa.evolution.operators.SAExchange" tree="@Tree.t:ss_tree" weight="20.0"/>
+        <operator id="BDMMPrimeSAUniformOperator.t:ss_tree" spec="sa.evolution.operators.SAUniform" tree="@Tree.t:ss_tree" weight="20.0"/>
+        <operator id="BDMMPrimeSATreeRootScaler.t:ss_tree" spec="sa.evolution.operators.SAScaleOperator" rootOnly="true" scaleFactor="0.95" tree="@Tree.t:ss_tree" weight="1.0"/>
+        <operator id="BDMMPrimeSATreeScaler.t:ss_tree" spec="sa.evolution.operators.SAScaleOperator" scaleFactor="0.95" tree="@Tree.t:ss_tree" weight="3.0"/>
+        <!-- Scaling operators for the new parameters -->
+        <operator id="ReOperator" spec="ScaleOperator" parameter="@Re" weight="3.0"/>
+        <operator id="SSFracOperator" spec="ScaleOperator" parameter="@SSFrac" weight="3.0"/>
+        <operator id="ReMultiplierScaler" spec="ScaleOperator" parameter="@ReMultiplier" weight="3.0"/>
+
+        <operator id="samplingProportionEpiScaler.t:ss_tree" spec="ScaleOperator" parameter="@samplingProportionEpi.t:ss_tree" weight="3.0"/>
+        <logger id="tracelog" spec="Logger" fileName="$(filebase).log" logEvery="1000" model="@posterior" sanitiseHeaders="true" sort="smart">
+            <log idref="posterior"/>
+            <log idref="likelihood"/>
+            <log idref="prior"/>
+            <log id="TreeHeight.t:ss_tree" spec="beast.base.evolution.tree.TreeStatLogger" tree="@Tree.t:ss_tree"/>
+            <log idref="kappa.s:ss_tree"/>
+            <log idref="gammaShape.s:ss_tree"/>
+            <log idref="proportionInvariant.s:ss_tree"/>
+            <log idref="clockRate.c:ss_tree"/>
+            <log idref="originBDMMPrime.t:ss_tree"/>
+            <log id="startTypePosteriorProbsLogger.t:ss_tree" spec="bdmmprime.util.StartTypePosteriorProbsLogger" bdmmTreePrior="@BDMMPrime.t:ss_tree"/>
+            <log id="typedTreeStats.t:ss_tree" spec="bdmmprime.mapping.TypedTreeStatsLogger" includeRootEdge="true" typeLabel="type" typeSet="@typeSetBDMMPrime.t:ss_tree">
+                <typedTree id="typeMappedTree.t:ss_tree" spec="bdmmprime.mapping.TypeMappedTree" bdmmDistrib="@BDMMPrime.t:ss_tree" mapOnInit="false" remapOnLog="true" startTypePriorProbs="@startTypePriorProbs.t:ss_tree" typeLabel="type" typeTraitSet="@typeTraitSet.t:ss_tree" untypedTree="@Tree.t:ss_tree"/>
+            </log>
+            <log idref="ReSPEpi.t:ss_tree"/>
+            <log idref="becomeUninfectiousRateSPEpi.t:ss_tree"/>
+            <log idref="samplingProportionSPEpi.t:ss_tree"/>
+            <log idref="ReAmongDemesSPEpi.t:ss_tree"/>
+            <log idref="ReMultiplier"/>
+            <log idref="SSFrac"/>
+            <log idref="Re"/>
+
+        </logger>
+        <logger id="screenlog" spec="Logger" logEvery="1000">
+            <log idref="posterior"/>
+            <log idref="prior"/>
+        </logger>
+        <logger id="treelog.t:ss_tree" spec="Logger" fileName="$(filebase)-$(tree).trees" logEvery="1000" mode="tree">
+            <log id="TreeWithMetaDataLogger.t:ss_tree" spec="beast.base.evolution.TreeWithMetaDataLogger" tree="@Tree.t:ss_tree"/>
+        </logger>
+        <logger id="typedTreeLogger.t:ss_tree" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="$(filebase).$(tree).typed.trees" logEvery="1000" mode="tree">
+            <log idref="typeMappedTree.t:ss_tree"/>
+        </logger>
+        <logger id="nodeTypedTreeLogger.t:ss_tree" spec="bdmmprime.util.OptionalLogger" enableLogger="true" fileName="$(filebase).$(tree).typed.node.trees" logEvery="1000" mode="tree">
+            <log id="nodeTypedTree.t:ss_tree" spec="bdmmprime.mapping.TypedNodeTreeLogger" typedTree="@typeMappedTree.t:ss_tree"/>
+        </logger>
+        <logger id="trajLogger.t:ss_tree" spec="bdmmprime.util.OptionalLogger" fileName="$(filebase).$(tree).traj" enableLogger="true" logEvery="1000">
+            <log id="typedTraj.t:ss_tree" spec="bdmmprime.trajectories.SampledTrajectory" bdmmDistrib="@BDMMPrime.t:ss_tree" startTypePriorProbs="@startTypePriorProbs.t:ss_tree" typeMappedTree="@typeMappedTree.t:ss_tree" useTauLeaping="true"/>
+        </logger>
+        <operatorschedule id="OperatorSchedule" spec="OperatorSchedule"/>
+    </run>
+
+</beast>
