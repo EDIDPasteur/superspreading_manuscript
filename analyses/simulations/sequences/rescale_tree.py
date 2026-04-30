@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 from io import StringIO
 import re
 from decimal import Decimal, getcontext
+from Bio import Phylo
 
 # Increase precision
 getcontext().prec = 20

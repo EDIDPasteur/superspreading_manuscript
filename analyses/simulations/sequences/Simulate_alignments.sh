@@ -1,9 +1,9 @@
 #! /usr/bin/env bash
 # Simulate alignments for different trees
-# Usage: Simulate_alignments.sh <trees_file>  <output_dir> <reference_fasta> 
+# Usage: Simulate_alignments.sh <xml_folder> <output_dir> <reference_fasta> 
 
 
-trees_file=$1
+xml_folder=$1
 output_dir=$2
 reference_fasta=$3
 
@@ -11,8 +11,8 @@ reference_fasta=$3
 if [ ! -d $output_dir ]; then
     mkdir -p $output_dir
 fi
-if [ ! -f $trees_file ]; then
-    echo "Trees file $trees_file not found!"
+if [ ! -d $xml_folder ]; then
+    echo "XML folder $xml_folder not found!"
     exit 1
 fi
 if [ ! -f $reference_fasta ]; then
@@ -27,11 +27,11 @@ fi
 # Parameters
 model="HKY{6.721}+I{0.9991}+G{0.5002}"
 seq_name=$(grep ">" $reference_fasta | sed -e 's/>//;s/ .*//' -e 's/ .*$//')
-group=$(basename $trees_file .trees)
+group=$(basename $xml_folder)
 substitution_rate=0.0000045
 
 # Rescale trees
-python "$(dirname $0)/rescale_tree.py" -t $trees_file -s $substitution_rate -o $output_dir/$group.rescaled.trees
+python "$(dirname $0)/rescale_tree.py" -f $xml_folder/*.xml -s $substitution_rate -o $output_dir/$group.rescaled.trees
 
 
 # run alisim for each tree
