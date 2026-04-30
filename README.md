@@ -103,7 +103,7 @@ are then fed back through BDMM-Prime as in 1a.
 cd analyses/hierarchical_model
 
 # Per accession: download, QC, map, assemble
-./process_reads.sh -a SRR... -r reads/ -m mapping/ -s assembly/ -p reports/ -f reference.fa
+./process_reads.sh -a SRR [SRR...] -r reads/ -m mapping/ -s assembly/ -p reports/ -f reference.fa
 
 # Per cluster: subset alignment, recombination filtering, ML tree
 ./process_clusters.sh -c cluster.clust -f full_alignment.fasta -o clusters_out/
