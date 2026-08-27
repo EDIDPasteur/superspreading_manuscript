@@ -22,9 +22,14 @@ figures of the manuscript:
 └── src/                      # Shared helpers (SLURM job runner, alnlen)
 ```
 
-## Requirements
+## System requirements
+
+### Dependencies
 - **BEAST 2** (2.7) with packages **BDMM-Prime** (≥ 2.4), **feast**, **ReMaster**, **SA**
-- **R** (4.4.1) with `tidyverse`, `latex2exp`, `ggpubr`, `beastio`, `coda`, `ape`, `phangorn`, `phyloTop`
+- **R** (4.4.1) with:
+  - `tidyverse` 2.0.0, `latex2exp` 0.9.8, `ggpubr` 0.6.0, `beastio` 0.3.3
+  - `coda` 0.19-4.1, `ape` 5.8, `phangorn` 2.12.1, `phyloTop` 2.1.3
+- **RStudio** 2024.04.2+764 (optional — scripts can also be run from the command line with `Rscript`)
 - **Python** (≥ 3.10) with `biopython`, `dendropy`
 - **IQ-TREE 3** (with AliSim)
 - Read-processing toolchain (used in `analyses/hierarchical_model/process_reads.sh`):
@@ -33,15 +38,29 @@ figures of the manuscript:
   `iqtree` 2.4.0, `gubbins` 3.4.3, `snp-sites` 2.5.1, `seqtk` 1.5
 - A C compiler to build `src/alnlen.c`
 
+### Tested on
+macOS 26.3 with R 4.4.1 (RStudio 2024.04.2+764) and BEAST 2.7.
+
+### Hardware
+- **Reproducing the figures** from pre-computed data requires only a standard laptop (< 2 min).
+- **Reproducing the full simulation study** requires a SLURM HPC cluster; `src/run_xml.sh` is a SLURM array-job script that submits hundreds of parallel BEAST runs.
+- No non-standard hardware is required to run the helper scripts or build `alnlen`.
+
+### Installation
+
 ```bash
 # Build the alnlen helper (used by Simulate_alignments.sh)
 gcc -O2 src/alnlen.c -o src/alnlen
 ```
 
+Installing all required software from scratch (conda environments + BEAST packages) takes approximately 15–30 minutes on a standard internet connection.
+
 ## Reproducing the figures
 
 The fastest path: regenerate every figure in the paper from the cached inputs in
-`figures/data/`. To do that, open the [`paper_figures.R`](figures/paper_figures.R) in Rstudio and run it end-to-end.
+`figures/data/`. To do that, open [`paper_figures.R`](figures/paper_figures.R) in RStudio and run it end-to-end. On a modern laptop this takes under 2 minutes.
+
+The script produces five PDF files in `figures/`: `Figure1.pdf`, `Figure2.pdf`, `Figure3.pdf`, `Figure4.pdf`, and `Figure5.pdf`, corresponding directly to the figures in the manuscript.
 
 Inputs consumed by `paper_figures.R`:
 
@@ -76,10 +95,17 @@ fraction `f ∈ {0.05, 0.25}` and the relative transmission multiplier
 inference XML per simulated tree (with and without tip types).
 
 Submit the resulting BDMM-Prime XMLs with `src/run_xml.sh` (SLURM array job;
-auto-stops when min ESS ≥ 200), then aggregate:
+auto-stops when min ESS ≥ 200), then aggregate results separately for trees and
+sequences, passing the output CSV name as the first argument:
 
 ```bash
-Rscript gather_results.R path/to/*.log
+# Aggregate tree-inference logs
+Rscript analyses/simulations/trees/gather_results.R \
+    Simulation_results_trees.csv path/to/tree_logs/*.log
+
+# Aggregate sequence-inference logs
+Rscript analyses/simulations/trees/gather_results.R \
+    Simulation_results_seqs.csv path/to/seq_logs/*.log
 ```
 
 #### 1b. Simulate alignments from the simulated trees
