@@ -80,12 +80,6 @@ def get_labels(filename):
 
 def write_high_precision(trees, outfile, precision=12):
     """Write trees with high-precision branch lengths (requires Biopython ≥1.81)."""
-
-    def fmt(bl):
-        if bl is None:
-            return None
-        return f"{bl:.{precision}f}"
-
     Phylo.write(trees, outfile, "newick", format_branch_length=f"%1.{precision}f")
 
 

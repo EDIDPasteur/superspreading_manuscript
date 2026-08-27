@@ -1,9 +1,10 @@
-#!/bin/python
+#!/usr/bin/env python3
 # This script is used to update the ReMaster master script and BDMMprime master script
 # Jordi Sevilla, 31/07/2025
 
 from argparse import ArgumentParser
 import os
+import re
 import dendropy
 import time
 
@@ -44,7 +45,7 @@ def read_arguments():
 
 
 def get_birth_rates(
-    ssprop: int, remultiplier: int, re=Re, bur=BECOME_UNINFECTIOUS_RATE
+    ssprop: float, remultiplier: float, re=Re, bur=BECOME_UNINFECTIOUS_RATE
 ):
     """
     Calculate the birth rates based on the given parameters.
@@ -122,7 +123,7 @@ def update_bdmmprime_script_no_tiptypes(file_path, new_filepath, tree):
         file.write(content)
 
 
-def process_combination_of_parameters(args, f, r, commands):
+def process_combination_of_parameters(args, f, r):
     # Update ReMaster master script
     re_master_file = args.re_master_file
     outdir = args.dir
@@ -153,24 +154,24 @@ def process_combination_of_parameters(args, f, r, commands):
             os.makedirs(bdmmprime_parent_dir)
 
         # Load the tree from the ReMaster master script
-        # First modify the tree file
-        file = f"{os.path.join(newoutdir, f'{name}_untyped.trees')}"
-        with open(file, "r") as fi:
+        # Fix trailing comma on the last taxon in the NEXUS TRANSLATE block
+        tree_file = os.path.join(newoutdir, f"{name}_untyped.trees")
+        with open(tree_file, "r") as fi:
             content = fi.read()
-            content = content.replace("500 leaf_499,", "500 leaf_499")
-        with open(file, "w") as fi:
+            content = re.sub(r"(\d+\s+leaf_\d+),(\s*\n\s*;)", r"\1\2", content)
+        with open(tree_file, "w") as fi:
             fi.write(content)
 
         try:
             # Load the tree using dendropy
             trees = list(
                 dendropy.TreeList.get(
-                    path=f"{os.path.join(newoutdir, f'{name}_untyped.trees')}",
+                    path=tree_file,
                     schema="nexus",
                 )
             )
             correct_tree = True
-        except:
+        except Exception:
             print("Retrying to run BEAST on the ReMaster master script...")
             time.sleep(5)
 
@@ -201,12 +202,9 @@ def process_combination_of_parameters(args, f, r, commands):
 def main():
     args = read_arguments()
 
-    processes = []
-    commands = []
-    # Iterate over the combinations of parameters to get all the commands
     for f in SS_PROP:
         for r in ReMULTIPLIER:
-            process_combination_of_parameters(args, f, r, commands)
+            process_combination_of_parameters(args, f, r)
 
     print("All xml files have been generated")
 

@@ -5,19 +5,19 @@
 # conda create -n phylo -c conda-forge -c bioconda iqtree==2.4.0 gubbins==3.4.3 snp-sites==2.5.1 seqtk==1.5
 
 if ! command -v iqtree &> /dev/null; then
-    echo "fasterq-dump could not be found, please install it."
+    echo "iqtree could not be found, please install it."
     exit 1
 fi
 if ! command -v snp-sites &> /dev/null; then
-    echo "FastQC could not be found, please install it."
+    echo "snp-sites could not be found, please install it."
     exit 1
 fi
 if ! command -v run_gubbins.py &> /dev/null; then
-    echo "snippy could not be found, please install it."
+    echo "run_gubbins.py could not be found, please install it."
     exit 1
 fi
 if ! command -v seqtk &> /dev/null; then
-    echo "snippy could not be found, please install it."
+    echo "seqtk could not be found, please install it."
     exit 1
 fi
 
@@ -35,7 +35,7 @@ while getopts "c:f:o:" opt; do
     *) echo "Invalid option: -$OPTARG" >&2 ;;
     esac
 done
-shift $((OPTIND -1))    
+shift $((OPTIND -1))
 
 # Log the parameters:
 echo "Cluster file: $CLUSTER_FILE"
@@ -54,19 +54,19 @@ mkdir -p  $outdir
 # Step 1: Subset the cluster alignment from the full alignment
 logthis "Subsetting cluster: $cluster_name"
 
-#seqtk subseq $FULL_ALIGNMENT $CLUSTER_FILE > $outdir/${cluster_name}.alignment.fasta
+seqtk subseq $FULL_ALIGNMENT $CLUSTER_FILE > $outdir/${cluster_name}.alignment.fasta
 
 if [ $? -ne 0 ]; then
-    logthis "Error subsetting $alignment_name"
+    logthis "Error subsetting $cluster_name"
     exit 1
 fi
-logthis "Successfully subsetted $alignment_name"
+logthis "Successfully subsetted $cluster_name"
 
 # Step 2: Use gubbins
 curdir=$(pwd)
 cd $outdir
 run_gubbins.py --prefix $cluster_name  ${cluster_name}.alignment.fasta
-cd $curdir 
+cd $curdir
 
 logthis "Run gubbins on the alignment for cluster: $cluster_name"
 if [ $? -ne 0 ]; then
@@ -83,5 +83,5 @@ iqtree -s $outdir/${cluster_name}.gubbins.snps -fconst $fconst
 
 logthis "Phylogeny infered for cluster: $cluster_name"
 
-logthis "Pipeline completed successfully for $ACCESSION_ID"
+logthis "Pipeline completed successfully for $cluster_name"
 exit 0

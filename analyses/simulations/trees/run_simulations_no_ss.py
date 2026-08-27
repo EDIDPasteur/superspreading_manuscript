@@ -1,12 +1,12 @@
-#!/bin/python
+#!/usr/bin/env python3
 # This script is used to update the ReMaster master script and BDMMprime master script
 # Jordi Sevilla, 31/07/2025
 
 from argparse import ArgumentParser
 import os
+import re
 import dendropy
 import time
-from concurrent.futures import ThreadPoolExecutor
 
 
 def read_arguments():
@@ -24,6 +24,9 @@ def read_arguments():
         type=str,
         required=True,
         help="Path to the BDMMprime master script file.",
+    )
+    parser.add_argument(
+        "-b", "--beast", help="Path to beast binary", type=str, required=True
     )
     parser.add_argument(
         "-d",
@@ -95,7 +98,7 @@ def update_bdmmprime_script_no_tiptypes(file_path, new_filepath, tree):
         file.write(content)
 
 
-def process_combination_of_parameters(args, commands):
+def process_combination_of_parameters(args):
     # Update ReMaster master script
     re_master_file = args.re_master_file
     outdir = args.dir
@@ -125,25 +128,24 @@ def process_combination_of_parameters(args, commands):
         if not os.path.exists(bdmmprime_parent_dir):
             os.makedirs(bdmmprime_parent_dir)
 
-        # Load the tree from the ReMaster master script
-        # First modify the tree file
-        file = f"{os.path.join(newoutdir, f'{name}_untyped.trees')}"
-        with open(file, "r") as fi:
+        # Fix trailing comma on the last taxon in the NEXUS TRANSLATE block
+        tree_file = os.path.join(newoutdir, f"{name}_untyped.trees")
+        with open(tree_file, "r") as fi:
             content = fi.read()
-            content = content.replace("500 leaf_499,", "500 leaf_499")
-        with open(file, "w") as fi:
+            content = re.sub(r"(\d+\s+leaf_\d+),(\s*\n\s*;)", r"\1\2", content)
+        with open(tree_file, "w") as fi:
             fi.write(content)
 
         try:
             # Load the tree using dendropy
             trees = list(
                 dendropy.TreeList.get(
-                    path=f"{os.path.join(newoutdir, f'{name}_untyped.trees')}",
+                    path=tree_file,
                     schema="nexus",
                 )
             )
             correct_tree = True
-        except:
+        except Exception:
             print("Retrying to run BEAST on the ReMaster master script...")
             time.sleep(5)
 
@@ -166,12 +168,7 @@ def process_combination_of_parameters(args, commands):
 
 def main():
     args = read_arguments()
-
-    processes = []
-    commands = []
-    # Iterate over the combinations of parameters to get all the commands
-    process_combination_of_parameters(args, commands)
-
+    process_combination_of_parameters(args)
     print(f"XML files have been created")
 
 

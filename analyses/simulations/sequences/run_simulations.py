@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/env python3
 # This script is used to update the ReMaster master script and BDMMprime master script
 # Jordi Sevilla, 31/07/2025
 
@@ -99,10 +99,10 @@ def update_bdmmprime_script_tiptypes(alignment, template, new_filepath, tree):
     for seq in alignment:
         taxon = seq.id
         height = float(seq.id.split("_")[2])
-        type = seq.id.split("_")[3]
+        tip_type = seq.id.split("_")[3]
 
         alignment_str += common_alignment_line.format(taxon, taxon, seq.seq) + "\n"
-        tiptypes += f"{taxon}={type},\n"
+        tiptypes += f"{taxon}={tip_type},\n"
         dates += f"{taxon}={height},"
 
     tiptypes = tiptypes.rstrip(",\n")  # Remove trailing comma and newline

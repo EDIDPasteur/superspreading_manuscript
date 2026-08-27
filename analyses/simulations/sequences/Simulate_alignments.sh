@@ -40,7 +40,7 @@ mkdir -p $output_dir/$group
 i=0
 for tree in $(cat $output_dir/$group.rescaled.trees); do
     echo $tree > $tmp_dir/tree.nwk
-    iqtree3 -T 8 --alisim $output_dir/$group/tree_${i} -m $model -t $tmp_dir/tree.nwk --length $(alnlen -i $reference_fasta) --redo --out-format fasta --root-seq $reference_fasta,$seq_name 
+    iqtree3 -T 8 --alisim $output_dir/$group/tree_${i} -m $model -t $tmp_dir/tree.nwk --length $("$(dirname "$0")/../../../src/alnlen" -i $reference_fasta) --redo --out-format fasta --root-seq $reference_fasta,$seq_name
     ((i++))
 done
 rm -rf $tmp_dir

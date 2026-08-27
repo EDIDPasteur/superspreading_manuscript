@@ -11,9 +11,9 @@ DATE_FORMAT = "%m/%d/%y"
 
 def parse_args():
     parser = ArgumentParser(description="Rename sequences in Fasta file to append the date at the end")
-    parser.add_argument("-f","--fasta_file", help="Path to the input FASTA file.")
-    parser.add_argument("-o","--output_file", help="Path to the output FASTA file.")
-    parser.add_argument("-d", "--dates_object", help="Path to the dates object file.")
+    parser.add_argument("-f","--fasta_file", required=True, help="Path to the input FASTA file.")
+    parser.add_argument("-o","--output_file", required=True, help="Path to the output FASTA file.")
+    parser.add_argument("-d", "--dates_object", required=True, help="Path to the dates object file.")
     return parser.parse_args()
 
 def load_dates(dates_file):

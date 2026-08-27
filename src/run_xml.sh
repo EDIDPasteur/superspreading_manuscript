@@ -48,10 +48,10 @@ beast -threads 2 -overwrite -working $INPUTFILE & pid=$!
 while true; do
 	sleep 900
 	ess=$(get_min_ess "$log_name")
-	echo "Current lowest ESS for $file: $ess"
+	echo "Current lowest ESS for $INPUTFILE: $ess"
 
 	if (( $(echo "$ess >= 200" | bc -l) )); then
-		echo "All ESS >= 200. Stopping BEAST for $file"
+		echo "All ESS >= 200. Stopping BEAST for $INPUTFILE"
 		kill "$pid"
 		wait "$pid" 2>/dev/null
 		break
